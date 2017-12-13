@@ -1,0 +1,501 @@
+﻿
+@{
+    ViewBag.Title = "AddCourse";
+}
+<h3 style="color: #d98632;"><b>Manage Courses</b></h3>
+<br />
+
+<script>
+
+    $(document).ready(function () {
+
+        var modify = {
+            CourseId: '',
+            Subject: '',
+            Category: '',
+            Title: '',
+            MinCredits: '',
+            MaxCredits: '',
+            SpecialApproval: '',
+            CRN: ''
+        };
+
+        var isNew;
+
+        $("#tableCourses").dataTable({
+            select: true,
+            sortable: true,
+            "dom": "<'row'<'col-sm-4'<'toolbar'>><'col-sm-8'f>> t<'bottom'ip>",
+            "ajax": {
+                "url": "/Course/GetCourses",
+                "type": "POST",
+            },
+            "pageLength": 10,
+            "columns": [
+                { "data": "CourseId" },
+                { "data": "Subject" },
+                { "data": "Category" },
+                { "data": "Title" },
+                { "data": "MinCredits" },
+                { "data": "MaxCredits" },
+                { "data": "SpecialApproval" },
+            ],
+            "columnDefs": [
+                {
+                    "targets": 6,
+                    render: function (data, type, row) {
+                        if (row.SpecialApproval)
+                            return 'Yes';
+                        else
+                            return 'No';
+
+                    },
+                    "className": "text-center"
+                },
+                {
+                    "targets": 0,
+                    "className": "text-center"
+                },
+                {
+                    "targets": 1, 
+                    "className": "text-center"
+                },
+                {
+                    "targets": 2, 
+                    "className": "text-center"
+                },
+                {
+                    "targets": 4, 
+                    "className": "text-center"
+                },
+                {
+                    "targets": 5, 
+                    "className": "text-center"
+                }
+
+            ]
+
+        });
+
+
+        $('#tableCourses').on('draw.dt', function () {
+            $("tr").removeClass("trSelected");
+            modify.CourseId = '';
+        });
+
+
+        $('#tableCourses_filter').css('width', '270px');
+
+        $("#tableCourses").on('click', 'tr', function () {
+            $("tr").removeClass("trSelected");
+            $(this).addClass('trSelected');
+            modify.CourseId = $(this).children('td').first().html();
+            modify.Subject = $(this).children('td:nth-child(2)').first().html()
+            modify.Category = $(this).children('td:nth-child(3)').first().html();
+            modify.Title = $(this).children('td:nth-child(4)').first().html();
+            modify.MinCredits = $(this).children('td:nth-child(5)').first().html();
+            modify.MaxCredits = $(this).children('td:nth-child(6)').first().html();
+            modify.SpecialApproval = $(this).children('td:nth-child(7)').first().html();
+
+        });
+
+        $('div.toolbar').append('<input type="button" value="Add" id="btnAdd" class="btn btn-default"/>');
+        $('div.toolbar').append('<input type="button" value="Update" id="btnUpdate" class="btn btn-default"/>');
+        $('div.toolbar').append('<input type="button" value="Delete" id="btnDelete" class="btn btn-default"/>');
+        //$('div.toolbar').append('<input type="button" value="Map To Instructor" id="btnMap" class="btn btn-default"/>');
+
+
+        $("#divAddOrUpdate").dialog({
+            autoOpen: false,
+            resizable: false,
+            draggable: false,
+            modal: true,
+            position: {
+                my: 'center',
+                at: 'center'
+            },
+            dialogClass: ''
+        });
+
+
+
+        $('#btnAdd').click(function () {
+            isNew = 1;
+            $('#btnDialogAdd').css('display', 'inline');
+            $('#btnDialogUpdate').css('display', 'none');
+            $('#divAddOrUpdate').dialog({ title: "Add New Course" }).dialog('open');
+            $('#txtCourseId').prop('disabled', false);
+
+            $('#txtCourseId').val('');
+            $('#txtTitle').val('');
+            $('#txtMinCredits').val('');
+            $('#txtMaxCredits').val('');
+            $('#ddlSubject').val('Select');
+            $('#ddlCategory').val('Select');
+            $('#chkSpecialApproval').prop('checked', false);
+
+        })
+
+        $('#btnUpdate').click(function () {
+            if (modify.CourseId == '') {
+                alert('Please select a Course  to update...!!')
+            }
+            else {
+                isNew = 0;
+
+                $('#btnDialogAdd').css('display', 'none');
+                $('#btnDialogUpdate').css('display', 'inline');
+                $('#txtCourseId').prop('disabled', true);
+
+
+                $('#txtCourseId').val(modify.CourseId);
+                $('#txtTitle').val(modify.Title);
+                $('#txtMinCredits').val(modify.MinCredits);
+                $('#txtMaxCredits').val(modify.MaxCredits);
+                $('#ddlSubject').val(modify.Subject);
+                $('#ddlCategory').val(modify.Category);
+
+                if (modify.SpecialApproval == "Yes")
+                    $('#chkSpecialApproval').prop('checked', true);
+                else
+                    $('#chkSpecialApproval').prop('checked', false);
+
+                $('#divAddOrUpdate').dialog({ title: "Update Course" }).dialog('open');
+            }
+
+        });
+
+
+        $('#btnDelete').click(function () {
+
+            if (modify.CourseId == '') {
+                alert('Please select a Course to Delete...!!')
+            }
+            else {
+                var answer = confirm("do you want to delete course " + modify.Title + "?");
+                if (answer) {
+                    $.ajax({
+                        url: '/Course/DeleteCourse',
+                        async: false,
+                        dataType: 'json',
+                        type: 'post',
+                        contentType: 'application/json',
+                        data: JSON.stringify({ "courseId": modify.CourseId }),
+                        //processData: false,
+                        success: function (response, status, xhr) {
+                            if (response.result == 1)
+                                DisplayMessage("Course Deleted Successfully", "green");
+                            else if (response.result == 0)
+                                DisplayMessage("Error while Deleting Course", "red");
+                        },
+                        error: function (jqXhr, textStatus, errorThrown) {
+                            DisplayMessage("Error while Deleting Course", "red");
+                        }
+                    });
+                    modify.CourseId == '';
+                    $('#tableCourses').DataTable().ajax.reload();
+                }
+            }
+
+        });
+
+
+        $('#fmAddOrUpdate').validate({
+            rules: {
+                CourseID: {
+                    required: true
+                },
+                'Subject': {
+                    required: true
+                }
+                ,
+                Category: {
+                    required: true
+                },
+                Title: {
+                    required: true
+                },
+                MinCredits: {
+                    required: true
+                },
+                MaxCredits: {
+                    required: true,
+
+                }
+            },
+            messages: {
+                CourseID: {
+                    required: "Please enter Course Id"
+                },
+                Subject: {
+                    Subject: "Please select a Subject type"
+                },
+                Category: {
+                    required: "Please select a Category type"
+                },
+                Title: {
+                    required: "Please enter Title"
+                },
+                MinCredits: {
+                    required: "Please enter Minimum Credits"
+                },
+                MaxCredits: {
+                    required: "Please enter Maximum Credits",
+                }
+            },
+            submitHandler: function (form) {
+                if (isNew == 1) {
+                    AddOrUpdateCourse(1, $('#txtCourseId').val(), $('#ddlSubject').val(), $('#ddlCategory').val(), $('#txtTitle').val(), $('#txtMinCredits').val(), $('#txtMaxCredits').val(), $('#chkSpecialApproval').prop('checked'));
+                }
+                else {
+                    AddOrUpdateCourse(0, modify.CourseId, $('#ddlSubject').val(), $('#ddlCategory').val(), $('#txtTitle').val(), $('#txtMinCredits').val(), $('#txtMaxCredits').val(), $('#chkSpecialApproval').prop('checked'))
+                }
+                $('#divAddOrUpdate').dialog('close');
+                $('#tableCourses').DataTable().ajax.reload();
+
+            },
+            invalidHandler: function () { // optional callback
+                // fires on button click when form is not valid
+            }
+
+        });
+
+
+
+
+        function AddOrUpdateCourse(isNew, courseId, subject, category, title, minCredits, maxCredits, specialApproval) {
+            $.ajax({
+                url: '/Course/AddOrUpdateCourse',
+                async: false,
+                dataType: 'json',
+                type: 'post',
+                contentType: 'application/json',
+                data: JSON.stringify({ "isNew": isNew, "courseId": courseId, "subject": subject, "category": category, "title": title, "minCredits": minCredits, "maxCredits": maxCredits, "specialApproval": specialApproval }),
+                //processData: false,
+                success: function (response, status, xhr) {
+                    if (response.result == 1)
+                        DisplayMessage("Course " + (isNew == 1 ? "Created" : "Updated") + " Successfully", "green");
+                    else if (response.result == -1)
+                        DisplayMessage("Course already exists", "#f0ad4e");
+                    else if (response.result == 0)
+                        DisplayMessage("Error while " + (isNew == 1 ? "Creating" : "Updating") + " Course");
+                },
+                error: function (jqXhr, textStatus, errorThrown) {
+                    DisplayMessage("Error while " + (isNew == 1 ? "Creating" : "Updating") + " Course");
+                }
+            });
+        }
+
+        // Course Map
+
+        //CourseMap
+
+        //$("#tableCourseMap").dataTable({
+        //    select: true,
+        //    sortable: true,
+        //    "dom": "<'row'<'col-sm-4'<'toolbar1'>><'col-sm-8'f>> t<'bottom'ip>",
+        //    "ajax": {
+        //        "url": "/Course/GetCourseMap",
+        //        "type": "POST",
+        //    },
+        //    "pageLength": 10,
+        //    "columns": [
+        //        { "data": "CRN" },
+        //        { "data": "Subject" },
+        //        { "data": "Course" },
+        //        { "data": "Section" },
+        //        { "data": "MinCredits" },
+        //        { "data": "MaxCredits" },
+        //        { "data": "Title" },
+        //        { "data": "Instructor" },
+        //        { "data": "Category" },
+        //        { "data": "SpecialApproval" }
+        //    ],
+
+        //    "columnDefs": [
+        //        {
+        //            "targets": 9,
+        //            render: function (data, type, row) {
+        //                if (row.SpecialApproval)
+        //                    return 'Yes';
+        //                else
+        //                    return 'No';
+
+        //            }
+        //        }]
+        //});
+
+        //$('div.toolbar1').append('<input type="button" value="Delete Map" id="btnDeleteMap" class="btn btn-default"/>');
+
+        //$('#tableCourseMap').on('draw.dt', function () {
+        //    $("tr").removeClass("trSelected");
+        //    modify.CourseId = '';
+        //});
+
+        //$('#tableCourseMap_filter').css('width', '270px');
+
+        //$("#tableCourseMap").on('click', 'tr', function () {
+        //    $("tr").removeClass("trSelected");
+        //    $(this).addClass('trSelected');
+        //    modify.CRN = $(this).children('td').first().html();
+        //});
+
+        //$('#btnDeleteMap').click(function () {
+
+        //    if (modify.CRN == '') {
+        //        alert('Please select map from table to Delete...!!')
+        //    }
+        //    else {
+        //
+
+        //        var answer = confirm("do you want to delete CRN " + modify.CRN + "?");
+        //        if (answer) {
+        //            $.ajax({
+        //                url: '/Course/DeleteCRN',
+        //                async: false,
+        //                dataType: 'json',
+        //                type: 'post',
+        //                contentType: 'application/json',
+        //                data: JSON.stringify({ "CRN": modify.CRN }),
+        //                //processData: false,
+        //                success: function (response, status, xhr) {
+        //                    alert(response.result)
+        //                },
+        //                error: function (jqXhr, textStatus, errorThrown) {
+        //                }
+        //            });
+
+        //            $('#tableCourseMap').DataTable().ajax.reload();
+        //        }
+        //    }
+
+        //})
+
+        $("#divMessage").dialog({
+            autoOpen: false,
+            resizable: false,
+            draggable: false,
+            position: {
+                my: 'center',
+                at: 'center'
+            },
+            dialogClass: ''
+        });
+
+        function DisplayMessage(msg, color) {
+            $('#lblMessage').text(msg);
+            $('#lblMessage').css('color', color);
+            $("#divMessage .ui-dialog-titlebar").css('background-color', 'red');
+            $("#divMessage").dialog({ title: "Message" }).dialog('open');
+        }
+
+        $('#btnMessage').click(function () {
+            $("#divMessage").dialog('close');
+        })
+
+    });
+
+</script>
+
+
+<table id="tableCourses" class="table table-hover">
+    <thead>
+        <tr>
+            <th>Course ID</th>
+            <th>Subject</th>
+            <th>Category</th>
+            <th>Title</th>
+            <th>Min Creadits</th>
+            <th>Max Credits</th>
+            <th>Special Approval Required?</th>
+        </tr>
+    </thead>
+
+</table>
+
+<hr />
+<br />
+<br />
+
+
+@*<table id="tableCourseMap" class="">
+        <thead>
+            <tr>
+                <th>CRN</th>
+                <th>Subject</th>
+                <th>Course</th>
+                <th>Section</th>
+                <th>Min Creadits</th>
+                <th>Max Credits</th>
+                <th>Title</th>
+                <th>Instructor</th>
+                <th>Category</th>
+                <th>Special Approval Required?</th>
+            </tr>
+        </thead>
+
+    </table>*@
+
+<div class="container" id="divAddOrUpdate" style="max-width:600px;">
+    <form data-toggle="validator" role="form" id="fmAddOrUpdate">
+        @Html.Label("Course ID") <strong> *</strong>
+        <div class="form-group">
+            @Html.Editor("CourseID", new { htmlAttributes = new { @class = "form-control", placeholder = "Course Id", id = "txtCourseId" } })
+        </div>
+
+        @Html.Label("Subject") <strong> *</strong>
+        <div class="form-group">
+            @Html.DropDownList("Subject", (IEnumerable<SelectListItem>)ViewBag.subject, new { @class = "form-control", id = "ddlSubject" })
+        </div>
+
+        @Html.Label("Category") <strong> *</strong>
+        <div class="form-group">
+            @Html.DropDownList("Category", (IEnumerable<SelectListItem>)ViewBag.category, new { @class = "form-control", id = "ddlCategory" })
+        </div>
+
+        @Html.Label("Title") <strong> *</strong>
+        <div class="form-group">
+            @Html.Editor("Title", new { htmlAttributes = new { @class = "form-control", placeholder = "Title", id = "txtTitle" } })
+        </div>
+
+        @Html.Label("Min Credits") <strong> *</strong>
+        <div class="form-group">
+            @Html.Editor("MinCredits", new { htmlAttributes = new { @class = "form-control", placeholder = "Min Credits", id = "txtMinCredits", type = "number" } })
+        </div>
+
+        @Html.Label("Max Credits") <strong> *</strong>
+        <div class="form-group">
+            @Html.Editor("MaxCredits", new { htmlAttributes = new { @class = "form-control", placeholder = "Max Credits", id = "txtMaxCredits", type = "number" } })
+        </div>
+
+
+        <div class="form-group">
+            @Html.Label("Special Approval")
+            @Html.CheckBox("SpecialApproval", htmlAttributes: new { id = "chkSpecialApproval" })
+        </div>
+
+        <button type="submit" class="btn btn-default" id="btnDialogAdd" style="float:right;width:100px">Add</button>
+        <button type="submit" class="btn btn-default" id="btnDialogUpdate" style="float:right;width:100px">Update</button>
+    </form>
+</div>
+
+
+<div id="divMessage" style="width:200px;height:100px">
+    <table style="width:100%;margin-top:10px">
+        <tr style="width:90%">
+            <td>
+                <lable id="lblMessage" class="info"></lable>
+            </td>
+        </tr>
+        <tr style="width:90%">
+            <td style="float:right;width:40px;height:30px"><input type="button" class="btn btn-info" id="btnMessage" value="Ok"></td>
+        </tr>
+    </table>
+</div>
+
+
+
+
+
+
+

@@ -1,0 +1,204 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <link href="~/Content/bootstrap.min.css" rel="stylesheet" type="text/css" />
+    <link href="~/Content/bootstrap-theme.css" rel="stylesheet" />
+    <link href="https://maxcdn.bootstrapcdn.com/font-awesome/4.2.0/css/font-awesome.min.css" rel="stylesheet">
+    <link href="~/Content/bootstrap-fullcalendar.css" rel="stylesheet" />
+    @*<link href="~/Content/fullcalendar.css" rel="stylesheet" />*@
+    <link href="~/Content/jquery-jvectormap-1.2.2.css" rel="stylesheet" />
+    <link href="~/Content/owl.carousel.css" rel="stylesheet" />
+    <link href="~/Content/widgets.css" rel="stylesheet" />
+    <link href="~/Content/Site.css" rel="stylesheet" />
+    <link href="~/Content/style-responsive.css" rel="stylesheet" />
+    <link href="~/Content/style.css" rel="stylesheet" />
+    <link href="~/Content/Site.css" rel="stylesheet" type="text/css" />   
+    <script src="~/Scripts/modernizr-2.6.2.js"></script>
+    <script src="~/Scripts/jquery-3.2.1.min.js"></script>
+    <link href="~/Content/DataTables/css/jquery.dataTables.css" rel="stylesheet" />
+    @*<script src="~/Scripts/moment.min.js"></script>
+    <script src="~/Scripts/fullcalendar.js"></script>*@
+    <script src="~/Scripts/bootstrap.js"></script>
+    <script src="~/Scripts/DataTables/jquery.dataTables.min.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.12.1/jquery-ui.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.12.1/jquery-ui.js" type="text/javascript"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/jquery-datetimepicker/2.5.12/jquery.datetimepicker.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-datetimepicker/2.5.12/jquery.datetimepicker.full.min.js" type="text/javascript"></script>
+    <script type="text/javascript" src="http://ajax.aspnetcdn.com/ajax/jquery.validate/1.7/jquery.validate.min.js"></script>
+
+    <style>
+        .trSelected {
+            background-color: #f5f5f5 !important;
+        }
+        .nodisplay {
+            display: none !important;
+        }
+        .error {
+            color: red;
+        }
+        strong{
+            color:red;
+        }
+
+        ::selection {
+            background: #0094ff; 
+        }
+
+        .ui-button-icon-only {
+            background-color: white;
+        }
+
+        .ui-dialog-titlebar {
+            background-color: #007aff;
+            color: white;
+            border-top-left-radius: 5px !important;
+            border-top-right-radius: 5px !important;
+        }
+
+        /*.ui-widget-content
+        {
+            background-color:white;
+            border:1px solid black;
+        }*/
+
+        .ui-widget-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #aaaaaa;
+            opacity: 0.6;
+        }
+
+        .ui-widget-content{
+            color:black;
+        }
+
+    </style>
+
+    <script>
+        $(document).ready(function () {
+
+            if (localStorage.getItem("activeElement"))
+            {
+                $("li[name=" + localStorage.getItem("activeElement") + "]").addClass('active');            
+            }
+            else {
+                $("li[name='Schedules']").addClass('active');
+            }
+
+            $.ajax({
+                type: "GET",
+                url: "/Authorize/GetUserName",
+                success: function (result) {
+                    $('#aUser').html(result.result);
+                }
+            });
+
+            $('#aSettings').click(function () {
+                $('.dropdown-menu').toggleClass('nodisplay');
+            });
+
+
+            $('ul.sidebar-menu li').click(function () {
+                localStorage.setItem('activeElement', $(this).attr("name"));
+            });
+
+        })
+
+
+    </script>
+
+</head>
+
+
+<body style="background-color:#ffffff;font-size:30px">
+
+    <div id="container" class="">
+        <header class="header dark-bg">
+            <div class="toggle-nav">
+                <a class="">
+                    <i class="fa fa-bars"></i>
+                </a>
+                  
+            </div>
+            <!--logo start-->
+            <a href="@Url.Action("ViewSchedule", "Home")" class="logo">Scheduler <span class="lite">Admin</span></a>
+            <!--logo end-->
+
+                <div class="btn-group open" style="float:right;margin-right:5%;margin-top:15px;border-radius:10px">
+                    <a class="btn btn-primary" style="pointer-events: none" ><i class="fa fa-user fa-fw" ></i> &nbsp;<b id="aUser"></b> </a>
+                    <a class="btn btn-primary" id="aSettings" style="border-left-color:white;border-top-right-radius:5px;border-bottom-right-radius:5px">
+                        <span class="fa fa-cog" ></span>
+                    </a>
+                    <ul class="dropdown-menu nodisplay">
+                        <li><a href="@Url.Action("Users", "Admin")"><i class="fa fa-unlock" aria-hidden="true"></i> &nbsp;Users</a></li>
+                        <li><a href="@Url.Action("Holidays", "Admin")"><i class="fa fa-plane" aria-hidden="true"></i> &nbsp;Holidays</a></li>
+                        <li class="divider"></li>
+                        <li><a href="@Url.Action("Logout", "Authorize")"><i class="fa fa-sign-out" aria-hidden="true"></i> &nbsp;Logout</a></li>
+                    </ul>
+                </div>
+        </header>
+
+        <aside>
+            <div id="sidebar" class="nav-collapse ">
+                <ul class="sidebar-menu">
+                    <li class="" name="Schedules">
+                        <a class="" href="@Url.Action("ViewSchedule", "Home")">
+                            <i class="fa fa-home"></i>
+                            <span>Schedules</span>
+                        </a>
+                    </li>
+
+                    <li name="ManageSchedule">
+                        <a class="" href="@Url.Action("ManageSchedule", "Home")">
+                            <i class="fa fa-calendar" aria-hidden="true"></i>
+                            <span>Manage Schedule</span>
+                        </a>
+                    </li>
+
+                    <li name="ManageCourse">
+                        <a class="" href="@Url.Action("ManageCourse", "Home")">
+                            <i class="fa fa-graduation-cap" aria-hidden="true"></i>
+                            <span>Manage Course</span>
+                        </a>
+                    </li>
+
+                    <li name="ManageInstructors">
+                        <a class="" href="@Url.Action("ManageInstructor", "Home")">
+                            <i class="fa fa-users" aria-hidden="true"></i>
+                            <span>Manage Instructors</span>
+                        </a>
+                    </li>
+
+                    <li name="ManageClassRoom">
+                        <a class="" href="@Url.Action("ManageClassRoom", "Home")">
+                            <i class="fa fa-building-o" aria-hidden="true"></i>
+                            <span>Class Rooms</span>
+                        </a>
+                    </li>
+
+                    <li name="Charts">
+                        <a class="" href="@Url.Action("Charts", "Home")">
+                            <i class="fa fa-bar-chart" aria-hidden="true"></i>
+                            <span>Charts</span>
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </aside>
+   </div>
+
+ 
+        <div id="divContentPlaceHolder" style="margin-left:250px; width:80%;" >
+            <br /><br /><br />
+            <br />
+                @RenderBody()        
+        </div>
+
+  
+ 
+</body>
+</html>
+

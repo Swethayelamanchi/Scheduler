@@ -1,0 +1,673 @@
+﻿
+@{
+    ViewBag.Title = "AddSchedule";
+}
+
+<h3 style="color: #d98632;"><b>Manage Schedules</b></h3>
+<br />
+
+@*<script src="http://cdnjs.cloudflare.com/ajax/libs/timepicker/1.3.5/jquery.timepicker.min.js"></script>
+<link rel="stylesheet" href="http://cdnjs.cloudflare.com/ajax/libs/timepicker/1.3.5/jquery.timepicker.min.css">*@
+<link href="~/Content/wickedpicker.min.css" rel="stylesheet" />
+<script src="~/Scripts/wickedpicker.js"></script>
+
+<style>
+    .ui-widget.ui-widget-content {
+        width: 450px !important;
+    }
+    td{
+        width:240px;
+        padding-left:10px;
+        padding-right:10px;
+    }
+    tr{
+        width:500px;
+    }
+    .wickedpicker{
+        z-index:999 !important;
+    }
+</style>
+
+<script>
+
+    $(document).ready(function () {
+
+        var modify = {
+            ScheduleId: 0,
+            CRN: '',
+            Subject: '',
+            Course: '',
+            Section: '',
+            Title: '',
+            Category: '',
+            Instructor: '',
+            Days: '',
+            Time: '',
+            StartDate: '',
+            EndDate: '',
+            Room: ''
+        };
+
+        var isNew;
+
+          $("#divCreateSchedule").dialog({
+            autoOpen: false,
+            resizable: false,
+            draggable: false,
+            modal: true,
+            position: {
+                my: 'center',
+                at: 'center'
+            },
+            dialogClass: ''
+        });
+
+          $("#tableSchedules").dataTable({
+            select: true,
+            sortable: true,
+            autoWidth:false,
+            "dom": "<'row'<'col-sm-4'<'toolbar'>><'col-sm-8'f>> t<'bottom'ip>",
+            "ajax": {
+                "url": "/Schedule/GetSchedules",
+                "type": "POST",
+            },
+            "pageLength": 10,
+            "columns": [
+                { "data": "ScheduleId"},
+                { "data": "CRN" },
+                { "data": "Subject" },
+                { "data": "Course" },
+                { "data": "Section" },
+                { "data": "Title"},
+                { "data": "Category" },
+                { "data": "Instructor" },
+                { "data": "Days" },
+                { "data": "Time" },
+                { "data": "StartDate" },
+                { "data": "Enddate" },
+                { "data": "Building" },
+                { "data": "location" }
+            ],
+
+            'columnDefs': [{
+                "targets": 0, // your case first column
+                "className": "text-left",
+                "width": "4%",
+                "sTitle":"ID"
+            },
+                {
+                    "targets": 1, // your case first column
+                    "className": "text-left",
+                    "width": "6%"
+                },
+            {
+                "targets": 2,
+                "className": "text-left",
+                "width": "5%"
+                },
+            {
+                "targets": 3,
+                "className": "text-left",
+                "width": "6%"
+            },
+            {
+                "targets": 4,
+                "className": "text-left",
+                "width": "3%"
+            },
+            {
+                "targets": 5,
+                "className": "text-left",
+                "width": "20%"
+            },
+            {
+                "targets": 6,
+                "className": "text-left",
+                "width": "5%"
+            },
+            {
+                "targets": 7,
+                "className": "text-left",
+                "width": "12%"
+            },
+            {
+                "targets": 8,
+                "className": "text-left",
+                "width": "5%"
+            },
+            {
+                "targets": 9,
+                "className": "text-left",
+                "width": "13%"
+            },
+            {
+                "targets": 10,
+                "className": "text-left",
+                "width": "6%"
+            },
+            {
+                "targets": 11,
+                "className": "text-left",
+                "width": "6%"
+            },
+            {
+                "targets": 12,
+                "className": "text-left",
+                "width": "8%"
+            },
+            {
+                "targets": 13,
+                "className": "text-left",
+                "width": "3%"
+            }
+
+            ]
+        });
+          $('div.toolbar').append('<input type="button" value="Create" id="btnCreate" class="btn btn-default"/>');
+          $('div.toolbar').append('<input type="button" value="Update" id="btnUpdate" class="btn btn-default"/>');
+          $('div.toolbar').append('<input type="button" value="Delete" id="btnDelete" class="btn btn-default"/>');
+          $('#tableSchedules_filter').css('width', '270px');
+
+
+        $("#tableSchedules").on('click', 'tr', function () {
+            $("tr").removeClass("trSelected");
+            $(this).addClass('trSelected');
+            modify.ScheduleId = $(this).children('td').first().html();
+            modify.CRN = $(this).children('td:nth-child(2)').first().html();
+            modify.Subject = $(this).children('td:nth-child(3)').first().html();
+            modify.Course = $(this).children('td:nth-child(4)').first().html();
+            modify.Section = $(this).children('td:nth-child(5)').first().html();
+            modify.Title = $(this).children('td:nth-child(6)').first().html();
+            modify.Category = $(this).children('td:nth-child(7)').first().html();
+            modify.Instructor = $(this).children('td:nth-child(8)').first().html();
+            modify.Days = $(this).children('td:nth-child(9)').first().html();
+            modify.Time = $(this).children('td:nth-child(10)').first().html().replace(/(\r\n|\n|\r)/gm, "");
+            modify.StartDate = $(this).children('td:nth-child(11)').first().html();
+            modify.EndDate = $(this).children('td:nth-child(12)').first().html();
+            modify.Room = $(this).children('td:nth-child(13)').first().html().replace(/(\r\n|\n|\r)/gm, "") + '_' + $(this).children('td:nth-child(14)').first().html().replace(/(\r\n|\n|\r)/gm, "");
+        });
+
+        $('#tableSchedules').on('draw.dt', function () {
+            $("tr").removeClass("trSelected");
+            modify.ScheduleId = '';
+            modify.CRN = '';
+            Subject = '';
+            Course = '';
+            Section = '';
+            Title = '';
+            Category = '';
+            Instructor = '';
+            Days = '';
+            Time = '';
+            StartDate = '';
+            EndDate = '';
+            Room = '';
+        });
+
+        $('#btnCreate').click(function () {
+            isNew = 1; modify.ScheduleId = 0;
+            $('#txtCRN').val('');
+            $('#ddlCourse').val('Select');
+            $('#ddlInstructor').val('Select');
+            $('#txtSection').val('');
+            $('#ddlRoom').val('Select');
+            $('#txtStartTime').val('');
+            $('#txtEndTime').val('');
+          
+            $('#chkRepeat').prop('checked', false);
+            $('#chkRepeat').change();
+            $('#chkMonday').prop('checked', false);
+            $('#chkTuesday').prop('checked', false);
+            $('#chkWednesday').prop('checked', false);
+            $('#chkThursday').prop('checked', false);
+            $('#chkFriday').prop('checked', false);
+            $('#btnDialogAdd').html('Create');
+            $('#divCreateSchedule').dialog({ title: "Create New schedule" }).dialog('open');
+        });
+
+        $('#btnUpdate').click(function () {
+
+            if (modify.ScheduleId == '') {
+                alert('Please select a schedule to Update...!!')
+            }
+            else {
+                isNew = 0;
+                $('#txtCRN').val(modify.CRN);
+                $('#ddlCourse').val(modify.Course);
+
+                $("#ddlInstructor option").filter(function () {
+                    return this.text == modify.Instructor;
+                }).attr('selected', true);
+
+                $('#txtSection').val(modify.Section);
+
+                 $("#ddlRoom option").filter(function () {
+                    return this.text == modify.Room;
+                }).attr('selected', true);
+
+                 $('#txtStartTime').val(modify.Time.substring(0, 8));
+                 $('#txtEndTime').val(modify.Time.substring(modify.Time.indexOf('-')+2));
+                 $('#txtStartDate').val(modify.StartDate);
+                 $('#txtEndDate').val(modify.EndDate);
+
+                if (modify.Days != '')
+                {
+                    $('#chkRepeat').prop('checked', true);
+                    $('#chkRepeat').change();
+
+                    $('#chkMonday').prop('checked', modify.Days.includes('M'));
+                    $('#chkWednesday').prop('checked', modify.Days.includes('W'));
+                    $('#chkThursday').prop('checked', modify.Days.includes('TH'));
+                    $('#chkFriday').prop('checked', modify.Days.includes('F'));
+                    if (modify.Days.includes('TH'))
+                        modify.Days = modify.Days.replace('TH', '');
+                    $('#chkTuesday').prop('checked', modify.Days.includes('T'));
+                }
+                else {
+                    $('#chkRepeat').prop('checked', false);
+                    $('#chkRepeat').change();
+                    $('#chkMonday').prop('checked', false);
+                    $('#chkTuesday').prop('checked', false);
+                    $('#chkWednesday').prop('checked', false);
+                    $('#chkThursday').prop('checked', false);
+                    $('#chkFriday').prop('checked', false);
+                }
+                $('#btnDialogAdd').html('Update');
+                $('#divCreateSchedule').dialog({ title: "Update schedule" }).dialog('open');
+            }
+
+        });
+
+
+        $('#btnDelete').click(function () {
+           
+            if (modify.ScheduleId == '') {
+                alert('Please select a schedule to Delete...!!')
+            }
+            else {
+                var answer = confirm("do you want to delete schedule " + modify.CRN + "?");
+                if (answer) {
+                    $.ajax({
+                        url: '/Schedule/DeleteSchedule',
+                        async: false,
+                        dataType: 'json',
+                        type: 'post',
+                        contentType: 'application/json',
+                        data: JSON.stringify({ "scheduleId": modify.ScheduleId }),
+                        //processData: false,
+                        success: function (response, status, xhr) {
+                            if (response.result == 1)
+                                DisplayMessage("Schedule Deleted Successfully", "green");
+                            else if (response.result == 0)
+                                DisplayMessage("Error while Deleting Schedule", "red");
+                        },
+                        error: function (jqXhr, textStatus, errorThrown) {
+                            DisplayMessage("Error while Deleting Schedule", "red");
+                        }
+                    });
+
+                    modify.ScheduleId == '';
+                    $('#tableSchedules').DataTable().ajax.reload();
+                }
+            }
+
+        });
+
+        $('#chkRepeat').change(function () {
+            if ($(this).is(":checked")) {
+                $('#divRepeat1').css('display', 'inline');
+                $('#txtEndDate').prop('disabled', false);
+                $('#divRepeat2').css('display', 'inline');
+                $('#lblStartDate').html('Start Date');
+            }
+            else {
+                $('#divRepeat1').css('display', 'none');
+                $('#txtEndDate').prop('disabled', true);
+                $('#divRepeat2').css('display', 'none');
+                $('#lblStartDate').html('Date');
+            }
+        });
+
+
+        $('#fmAddOrUpdate').validate({
+            rules: {
+                CRNNumber: {
+                    required: true,
+                    number: true
+                },
+                Course: {
+                    required: true
+                },
+                Instructor: {
+                    required: true
+                },
+                Section: {
+                    required: true,
+                    number: true
+                },
+                Room: {
+                    required: true
+                },
+            
+                StartTime: {
+                    required: true
+                },
+                EndTime: {
+                    required: true
+                },
+                StartDate: {
+                    required: true,
+                    date: true
+                },
+                EndDate: {
+                    required: true,
+                    date: true
+                }
+            
+            },
+            messages: {
+                CRNNumber: {
+                    required: "Please enter  a CRN"
+                },
+                Course: {
+                    required: "Please select a Course"
+                },
+                Instructor: {
+                    required: "Please select an Instructor"
+                },
+                Section: {
+                    required: "Please enter a Section"
+                },
+                Room: {
+                    required: "Please select a Room"
+                },
+                StartTime: {
+                    required: "Please enter Start Time",
+                },
+                endTime: {
+                    required: "Please enter End Time",
+                },
+                startDate: {
+                    required: "Please enter Start Date",
+                },
+                EndDate: {
+                    required: "Please enter End Date",
+                }
+            },
+            submitHandler: function (form) {
+                    AddOrUpdateSchedule();
+                    $('#divCreateSchedule').dialog('close');
+                    $('#tableSchedules').DataTable().ajax.reload();
+            },
+            invalidHandler: function () { // optional callback
+                // fires on button click when form is not valid
+            }
+
+        });
+
+            function AddOrUpdateSchedule()
+            {
+ 
+                scheduleId = modify.ScheduleId;
+                CRN = $('#txtCRN').val();
+                courseId = $('#ddlCourse').val();
+                instructorId = $('#ddlInstructor').val();
+                section = $('#txtSection').val();
+                roomNumber = $('#ddlRoom').val();
+                startDate = $('#txtStartDate').val();
+                startTime = $('#txtStartTime').val();
+                endTime = $('#txtEndTime').val();
+
+                if ($('#chkRepeat').is(":checked"))
+                {
+                    endDate = $('#txtEndDate').val();
+                    series =  1 ;
+                }
+                else {
+                    endDate = $('#txtStartDate').val();
+                    series = 0;
+                }
+                days = '';
+
+                if ($('#chkMonday').is(":checked"))
+                    days += 'M';
+                if ($('#chkTuesday').is(":checked"))
+                    days += 'T';
+                if ($('#chkWednesday').is(":checked"))
+                    days += 'W';
+                if ($('#chkThursday').is(":checked"))
+                    days += 'TH';
+                if ($('#chkFriday').is(":checked"))
+                    days += 'F';
+
+                $.ajax({
+                    url: '/Schedule/AddOrUpdateSchedule',
+                    async: false,
+                    dataType: 'json',
+                    type: 'post',
+                    contentType: 'application/json',
+                    data: JSON.stringify({
+                        "isNew": isNew, "scheduleId": scheduleId, "CRN": CRN, "courseId": courseId, "instructorId": instructorId, "section": section, "roomNumber": roomNumber,
+                        "days": days ,  "startDate": startDate, "endDate": endDate, "startTime": startTime, "endTime": endTime, "series": series}),
+                    //processData: false,
+                    success: function (response, status, xhr) {
+                       
+                        if (response.result == 1)
+                        {
+                            DisplayMessage("Schedule " + (isNew == 1 ?  "Created" : "Updated") + " Successfully", "green");
+                        }
+                           
+                        else if (response.result == -1)
+                            DisplayMessage("Schedule trying to created exists", "#f0ad4e");
+                        else if (response.result == 0)
+                            DisplayMessage("Error while " + (isNew == 1 ?  "Creating" : "Updating") + " Schedule");
+                    },
+                    error: function (jqXhr, textStatus, errorThrown) {
+                        DisplayMessage("Error while " + (isNew == 1 ?  "Creating" : "Updating") + " Schedule");
+                    }
+                });
+
+            }
+
+
+            $('#txtStartTime').wickedpicker();
+            $('#txtEndTime').wickedpicker();
+       
+        
+
+        $('#txtStartDate').datetimepicker({
+            timepicker: false,
+            dayOfWeekStart: 1,
+            format: 'Y/m/d',
+            lang: 'en',
+            mask: '9999/31/12',
+            scrollInput: false,
+            //value:CurrentDateTime
+        });
+
+
+        $('#txtEndDate').datetimepicker({
+            timepicker: false,
+            dayOfWeekStart: 1,
+            format: 'Y/m/d',
+            lang: 'en',
+            mask: '9999/31/12',
+            scrollInput: false,
+            //value:CurrentDateTime
+        });
+
+
+        $("#divMessage").dialog({
+            autoOpen: false,
+            resizable: false,
+            draggable: false,
+            position: {
+                my: 'center',
+                at: 'center'
+            },
+            dialogClass: ''
+        });
+
+        function DisplayMessage(msg, color) {
+            $('#lblMessage').text(msg);
+            $('#lblMessage').css('color', color);
+            $("#divMessage .ui-dialog-titlebar").css('background-color', 'red');
+            $("#divMessage").dialog({ title: "Message" }).dialog('open');
+        }
+
+        $('#btnMessage').click(function () {
+            $("#divMessage").dialog('close');
+        })
+
+
+    });
+
+</script>
+
+<table id="tableSchedules" class="table table-hover">
+    <thead>
+        <tr>
+            <th>Schedule ID</th>
+            <th>CRN</th>
+            <th>Subject</th>
+            <th>Course</th>
+            <th>Section</th>
+            <th>Title</th>
+            <th>Category</th>
+            <th>Instructor</th>
+            <th>Days</th>
+            <th>Time</th>
+            <th>StartDate</th>
+            <th>Enddate</th>
+            <th>Building</th>
+            <th>location</th>
+        </tr>
+    </thead>
+</table>
+
+
+<div class="container" id="divCreateSchedule" >
+        <form data-toggle="validator" role="form" id="fmAddOrUpdate">
+
+            <table style="width:400px">
+                <tr>
+                    <td>
+                        @Html.Label("CRN") <strong> *</strong>
+                        <div class="form-group">
+                            @Html.Editor("CRNNumber", new { htmlAttributes = new { @class = "form-control", placeholder = "CRN", id = "txtCRN", type = "number" } })
+                        </div>
+                    </td>
+                    <td>
+                        @Html.Label("Course") <strong> *</strong>
+                        <div class="form-group">
+                            @Html.DropDownList("Course", (IEnumerable<SelectListItem>)ViewBag.course, new { @class = "form-control", id = "ddlCourse" })
+                        </div>
+                    </td>
+                </tr>
+
+                <tr>
+                    <td>
+                        @Html.Label("Instructor") <strong> *</strong>
+                        <div class="form-group">
+                            @Html.DropDownList("Instructor", (IEnumerable<SelectListItem>)ViewBag.instructor, new { @class = "form-control", id = "ddlInstructor" })
+                        </div>
+                    </td>
+                    <td>
+                        @Html.Label("Section") <strong> *</strong>
+                        <div class="form-group">
+                            @Html.Editor("Section", new { htmlAttributes = new { @class = "form-control", placeholder = "Section", id = "txtSection", type = "number" } })
+                        </div>
+                    </td>
+                </tr>
+
+                <tr>
+                    <td>
+                        @Html.Label("Class Room") <strong> *</strong>
+                        <div class="form-group">
+                            @Html.DropDownList("Room", (IEnumerable<SelectListItem>)ViewBag.rooms, new { @class = "form-control", id = "ddlRoom" })
+                        </div>
+                    </td>
+                    <td>
+                        @Html.Label("Start Time")<strong> *</strong>
+                        <div class="form-group">
+                            @Html.Editor("StartTime", new { htmlAttributes = new { @class = "form-control", id = "txtStartTime" } })
+                        </div>
+                    </td>
+                </tr>
+
+                <tr>
+                    <td>
+                        @Html.Label("End Time")<strong> *</strong>
+                        <div class="form-group">
+                            @Html.Editor("EndTime", new { htmlAttributes = new { @class = "form-control", id = "txtEndTime" } })
+                        </div>
+                    </td>
+
+                    <td>
+                        @Html.Label("Date", new {id = "lblStartDate" } )<strong> *</strong>
+                        <div class="form-group">
+                            @Html.Editor("StartDate", new { htmlAttributes = new { @class = "form-control", id = "txtStartDate" } })
+                        </div>
+                    </td>
+                </tr>
+                <tr>
+                    <td colspan="2">
+                        @Html.CheckBox("Repeat", htmlAttributes: new { id = "chkRepeat" })
+                        @Html.Label("Repeat")
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                       <div id="divRepeat1" style="display:none">
+                           @Html.Label("End Date")<strong> *</strong>
+                           <div class="form-group">
+                               @Html.Editor("EndDate", new { htmlAttributes = new { @class = "form-control", id = "txtEndDate" , disabled = "disabled" } })
+                           </div>
+                       </div>
+                           
+                    </td>
+                    <td>
+                        <div id="divRepeat2" style="display:none">
+                            @Html.CheckBox("Monday", htmlAttributes: new { id = "chkMonday" })
+                            @Html.Label("Moday")
+                            &nbsp;
+                            @Html.CheckBox("Tuesday", htmlAttributes: new { id = "chkTuesday" })
+                            @Html.Label("Tuesday")
+                            <br />
+                            @Html.CheckBox("Wednesday", htmlAttributes: new { id = "chkWednesday" })
+                            @Html.Label("Wednesday")
+                            &nbsp;
+                            @Html.CheckBox("Thursday", htmlAttributes: new { id = "chkThursday" })
+                            @Html.Label("Thursday")
+                            <br />
+                            @Html.CheckBox("Friday", htmlAttributes: new { id = "chkFriday" })
+                            @Html.Label("Friday")
+                        </div>
+                        
+                    </td>
+                </tr>
+
+                <tr>
+                    <td></td>
+                    <td>
+                        <button type="submit" class="btn btn-primary" id="btnDialogAdd" style="float:right;width:100px">Create</button>
+                    </td>
+                </tr>
+            </table>
+        </form>
+    </div>
+
+<div id="divMessage" style="width:200px;height:100px">
+    <table style="width:100%;margin-top:10px">
+        <tr style="width:90%">
+            <td>
+                <lable id="lblMessage" class="info"></lable>
+            </td>
+        </tr>
+        <tr style="width:90%">
+            <td style="float:right;width:40px;height:30px"><input type="button" class="btn btn-info" id="btnMessage" value="Ok"></td>
+        </tr>
+    </table>
+</div>
+
+<hr />

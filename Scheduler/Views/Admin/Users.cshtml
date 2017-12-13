@@ -1,0 +1,436 @@
+﻿@{
+    ViewBag.Title = "Users";
+}
+
+<h3 style="color: #d98632;"><b>Users</b></h3>
+<br />
+
+<script>
+
+    $(document).ready(function () {
+
+        var modify =
+            {
+                UserName: '',
+                FirstName: '',
+                LastName: '',
+                Email: ''
+            };
+
+        var isNew;
+
+        $("#tableUsers").dataTable({
+            select: true,
+            sortable: true,
+            "dom": "<'row'<'col-sm-4'<'toolbar'>><'col-sm-8'f>> t<'bottom'ip>",
+            "ajax": {
+                "url": "/Admin/GetUsers",
+                "type": "POST",
+            },
+            "pageLength": 10,
+            "columns": [
+                { "data": "UserName" },
+                { "data": "FirstName" },
+                { "data": "LastName" },
+                { "data": "Email" },
+                { "data": "Role" },
+            ]
+
+        });
+
+        $('#tableUsers').on('draw.dt', function () {
+            $("tr").removeClass("trSelected");
+            modify.UserName = '';
+        });
+
+        $('#tableUsers_filter').css('width', '270px');
+
+        $("#tableUsers").on('click', 'tr', function () {
+            $("tr").removeClass("trSelected");
+            $(this).addClass('trSelected');
+            modify.UserName = $(this).children('td').first().html();
+            modify.FirstName = $(this).children('td:nth-child(2)').first().html()
+            modify.LastName = $(this).children('td:nth-child(3)').first().html();
+            modify.Email = $(this).children('td:nth-child(4)').first().html();
+        });
+
+        $('div.toolbar').append('<input type="button" value="Add" id="btnAdd" class="btn btn-default"/>');
+        $('div.toolbar').append('<input type="button" value="Update" id="btnUpdate" class="btn btn-default"/>');
+        $('div.toolbar').append('<input type="button" value="Delete" id="btnDelete" class="btn btn-default"/>');
+        $('div.toolbar').append('<input type="button" value="Reset Password" id="btnReset" class="btn btn-default"/>');
+
+
+
+        $("#divAddOrUpdate").dialog({
+            autoOpen: false,
+            resizable: false,
+            draggable: false,
+            modal : true,
+            position: {
+                my: 'center',
+                at: 'center'
+            },
+            dialogClass: ''
+        });
+
+        $("#divResetPassword").dialog({
+            autoOpen: false,
+            resizable: false,
+            draggable: false,
+            modal: true,
+            position: {
+                my: 'center',
+                at: 'center'
+            },
+            dialogClass: ''
+        });    
+
+        $('#btnAdd').click(function () {
+            isNew = 1;
+            $('#btnDialogAdd').css('display', 'inline');
+            $('#txtPassword').css('display', 'inline');
+            $('#txtRePassword').css('display', 'inline');
+            $('#divPassword').css('display', 'inline');
+            $('#divRePassword').css('display', 'inline');
+            $('#btnDialogUpdate').css('display', 'none');
+            $('#txtUserName').prop('disabled', false);
+            $('#divAddOrUpdate').dialog({ title: "Add User" }).dialog('open');
+
+            $('#txtUserName').val('');
+            $('#txtFirstName').val('');
+            $('#txtLastName').val('');
+            $('#txtEmail').val('');
+        })
+
+        $('#btnUpdate').click(function () {
+            if (modify.UserName == '') {
+                alert('Please select a Username to update...!!')
+            }
+            else {
+                isNew = 0;
+                $('#btnDialogAdd').css('display', 'none');
+                $('#txtPassword').css('display', 'none');
+                $('#txtRePassword').css('display', 'none');
+                $('#divPassword').css('display', 'none');
+                $('#divRePassword').css('display', 'none');
+                $('#btnDialogUpdate').css('display', 'inline');
+                $('#txtUserName').val(modify.UserName);
+                $('#txtFirstName').val(modify.FirstName);
+                $('#txtLastName').val(modify.LastName);
+                $('#txtEmail').val(modify.Email);
+                $('#txtUserName').prop('disabled', true);
+                $('#divAddOrUpdate').dialog({ title: "Update User" }).dialog('open');
+            }
+
+        });
+
+        $('#btnReset').click(function () {
+
+            if (modify.UserName == '') {
+                alert('Please select a User to reset Password...!!')
+            }
+            else {
+                $('#txtResetUserName').val(modify.UserName);
+                $('#divResetPassword').dialog({ title: "Reset User Password" }).dialog('open');
+            }
+
+        })
+
+
+        $('#btnDelete').click(function () {
+
+            if (modify.UserName == '') {
+                alert('Please select a user to Delete...!!')
+            }
+            else {
+                var answer = confirm("do you want to delete user " + modify.UserName + "?");
+                if (answer) {
+                    $.ajax({
+                        url: '/Admin/DeleteUser',
+                        async: false,
+                        dataType: 'json',
+                        type: 'post',
+                        contentType: 'application/json',
+                        data: JSON.stringify({ "userName": modify.UserName }),
+                        //processData: false,
+                        success: function (response, status, xhr) {
+                            if (response.result == 1)
+                                DisplayMessage("User Deleted Successfully", "green");
+                            else if (response.result == 0)
+                                DisplayMessage("Error while Deleting User", "red");
+                        },
+                        error: function (jqXhr, textStatus, errorThrown) {
+                            DisplayMessage("Error while Deleting User", "red");
+                        }
+                    });
+                    modify.UserName == '';
+                    $('#tableUsers').DataTable().ajax.reload();
+                }
+            }
+
+        })
+
+
+        //$('#btnDialogAdd').click(function () {
+
+        //    AddOrUpdateUser(1, $('#txtUserName').val(), $('#txtFirstName').val(), $('#txtLastName').val(), $('#txtEmail').val(), $('#txtRole').val(), $('#txtPassword').val());
+        //    $('#divAddOrUpdate').dialog('close');
+        //})
+
+        //$('#btnDialogUpdate').click(function () {
+        //    AddOrUpdateUser(0, $('#txtUserName').val(), $('#txtFirstName').val(), $('#txtLastName').val(), $('#txtEmail').val(), $('#txtRole').val(),'')
+        //    $('#divAddOrUpdate').dialog('close');
+        //})
+
+        $('#fmAddOrUpdate').validate({
+            rules: {
+                UserName: {
+                    required: true
+                },
+                FirstName: {
+                    required: true
+                },
+                Email: {
+                    email : true
+                },
+                Role: {
+                    required: true
+                },
+                Password: {
+                    required: true
+                },
+                RetypePassword: {
+                    required: true,
+                    equalTo: "#txtPassword"
+                }
+            },
+            messages: {
+                UserName: {
+                    required: "Please enter User Name"
+                },
+                FirstName: {
+                    required: "Please enter First Name"
+                },
+                Role: {
+                    required: "Please Select Role"
+                },
+                Email: {
+                    email: "Invalid email"
+                },
+                Password: {
+                    required: "Please enter Password"
+                },
+                RetypePassword: {
+                    required: "Please Confirm Password",
+                    equalTo: "Password do not match"
+                }
+            },
+            submitHandler: function (form) {
+                if (isNew == 1)
+                {
+                    AddOrUpdateUser(1, $('#txtUserName').val(), $('#txtFirstName').val(), $('#txtLastName').val(), $('#txtEmail').val(), $('#txtRole').val(), $('#txtPassword').val());
+                }
+                else
+                {
+                    AddOrUpdateUser(0, $('#txtUserName').val(), $('#txtFirstName').val(), $('#txtLastName').val(), $('#txtEmail').val(), $('#txtRole').val(), '');
+                }
+
+                $('#divAddOrUpdate').dialog('close');
+            },
+            invalidHandler: function () { // optional callback
+                // fires on button click when form is not valid
+            }
+        });
+
+
+        function AddOrUpdateUser(isNew, UserName, FirstName, LastName, Email, Role, Password) {
+            $.ajax({
+                url: '/Admin/AddOrUpdateUser',
+                async: false,
+                dataType: 'json',
+                type: 'post',
+                contentType: 'application/json',
+                data: JSON.stringify({ "isNew": isNew, "userName": UserName, "firstName" : FirstName,"lastName":LastName,"email":Email,"role":Role,"password":Password }),
+                //processData: false,
+                success: function (response, status, xhr) {
+                    if (response.result == 1)
+                        DisplayMessage("User " + (isNew == 1 ?  "Created" : "Updated" ) + " Successfully", "green");
+                    else if (response.result == -1)
+                        DisplayMessage("User already exists", "#f0ad4e");
+                    else if (response.result == 0)
+                        DisplayMessage("Error while " + (isNew == 1 ?  "Creating" : "Updating") + " User");
+                },
+                error: function (jqXhr, textStatus, errorThrown) {
+                    DisplayMessage("Error while " + (isNew == 1 ?  "Creating" : "Updating") + " User");
+                }
+            });
+            $('#tableUsers').DataTable().ajax.reload();
+        }
+
+
+        $('#fmReset').validate({
+            rules: {
+                UserName: {
+                    required: true
+                },
+                Password: {
+                    required: true
+                },
+                RetypePassword: {
+                    required: true,
+                    equalTo: "#txtResetPassword"
+                }
+            },
+            messages: {
+                UserName: {
+                    required: "Please enter User Name"
+                },
+                Password: {
+                    required: "Please enter Password"
+                },
+                RetypePassword: {
+                    required: "Please Confirm Password",
+                    equalTo: "Password do not match"
+                }
+            },
+            submitHandler: function (form) {
+                $.ajax({
+                    url: '/Admin/ResetPassword',
+                    async: false,
+                    dataType: 'json',
+                    type: 'post',
+                    contentType: 'application/json',
+                    data: JSON.stringify({ "userName": modify.UserName, "password": $('#txtResetPassword').val() }),
+                    //processData: false,
+                    success: function (response, status, xhr) {
+                        if (response.result == 1)
+                            DisplayMessage("Reset Password Successful", "green");
+                        else if (response.result == 0)
+                            DisplayMessage("Error in Reset Password", "red");
+                    },
+                    error: function (jqXhr, textStatus, errorThrown) {
+                        DisplayMessage("Error in Reset Password", "red");
+                    }
+                });
+                $('#divResetPassword').dialog('close');
+            },
+            invalidHandler: function () { // optional callback
+                // fires on button click when form is not valid
+            }
+        });
+
+        $("#divMessage").dialog({
+            autoOpen: false,
+            resizable: false,
+            draggable: false,
+            position: {
+                my: 'center',
+                at: 'center'
+            },
+            dialogClass: ''
+        });
+
+        function DisplayMessage(msg, color) {
+            $('#lblMessage').text(msg);
+            $('#lblMessage').css('color', color);
+            $("#divMessage .ui-dialog-titlebar").css('background-color', 'red');
+            $("#divMessage").dialog({ title: "Message" }).dialog('open');
+        }
+
+        $('#btnMessage').click(function () {
+            $("#divMessage").dialog('close');
+        })
+
+    });
+
+</script>
+
+
+<table id="tableUsers" class="table table-hover">
+    <thead>
+        <tr>
+            <th>User Name</th>
+            <th>First Name</th>
+            <th>Last Name</th>
+            <th>Email</th>
+            <th>Role</th>
+        </tr>
+    </thead>
+
+</table>
+
+<div class="container" id="divAddOrUpdate" style="max-width:600px;">
+    <form data-toggle="validator" role="form" id="fmAddOrUpdate">
+        @Html.Label("User Name")<strong> *</strong>
+        <div class="form-group">
+            @Html.Editor("UserName", new { htmlAttributes = new { @class = "form-control", placeholder = "User Name", id = "txtUserName" } })
+        </div>
+        @Html.Label("First Name")<strong> *</strong>
+        <div class="form-group">
+            @Html.Editor("FirstName", new { htmlAttributes = new { @class = "form-control", placeholder = "First Name", id = "txtFirstName" } })
+        </div>
+
+        @Html.Label("Last Name")
+        <div class="form-group">
+            @Html.Editor("LastName", new { htmlAttributes = new { @class = "form-control", placeholder = "Last Name", id = "txtLastName" } })
+        </div>
+
+        @Html.Label("Email")
+        <div class="form-group">
+            @Html.Editor("Email", new { htmlAttributes = new { @class = "form-control", placeholder = "Email", id = "txtEmail" } })
+        </div>
+
+        @Html.Label("Role")<strong> *</strong>
+        <div class="form-group">
+            @Html.Editor("Role", new { htmlAttributes = new { @class = "form-control",  id = "txtRole", Value="Admin", disabled = "disabled" } })
+        </div>
+       
+        <div id="divPassword">@Html.Label("Password", new { htmlAttributes = new { id = "lblPassword" } })<strong> *</strong></div>
+        <div class="form-group">         
+            @Html.Editor("Password", new { htmlAttributes = new { @class = "form-control", placeholder = "Password", id = "txtPassword" , type="password" } })
+        </div>
+       
+        <div id="divRePassword">@Html.Label("Confirm Password", new { htmlAttributes = new { id = "lblRePassword" } })<strong> *</strong></div>
+        <div class="form-group">
+            @Html.Editor("RetypePassword", new { htmlAttributes = new { @class = "form-control", placeholder = "Re Enter Password", id = "txtRePassword", type = "password" } })
+        </div>
+        <br />
+        <button type="submit" class="btn btn-primary" id="btnDialogAdd" style="float:right;width:100px">Add</button>
+        <button type="submit" class="btn btn-primary" id="btnDialogUpdate" style="float:right;width:100px">Update</button>
+</form>
+</div>
+
+
+<div class="container" id="divResetPassword" style="max-width:600px;">
+    <form data-toggle="validator" role="form" id="fmReset">
+        @Html.Label("User Name") <strong> *</strong>
+        <div class="form-group">
+            @Html.Editor("UserName", new { htmlAttributes = new { @class = "form-control", placeholder = "User Name", id = "txtResetUserName", disabled = "disabled" } })
+        </div>
+
+        @Html.Label("Password") <strong> *</strong>
+        <div class="form-group">
+            @Html.Editor("Password", new { htmlAttributes = new { @class = "form-control", placeholder = "Password", id = "txtResetPassword" , type = "password" } })
+        </div>
+        @Html.Label("Confirm Password") <strong> *</strong>
+        <div class="form-group">
+            @Html.Editor("RetypePassword", new { htmlAttributes = new { @class = "form-control", placeholder = "Re Enter Password", id = "txtResetRePassword", type = "password" } })
+        </div>
+
+        <button type="submit" class="btn btn-primary" id="btnDialogReset" style="float:right;width:100px">Reset</button>
+    </form>
+</div>
+
+
+<div id="divMessage" style="width:200px;height:100px">
+    <table style="width:100%;margin-top:10px">
+        <tr style="width:90%">
+            <td>
+                <lable id="lblMessage" class="info"></lable>
+            </td>
+        </tr>
+        <tr style="width:90%">
+            <td style="float:right;width:40px;height:30px"><input type="button" class="btn btn-info" id="btnMessage" value="Ok"></td>
+        </tr>
+    </table>
+</div>

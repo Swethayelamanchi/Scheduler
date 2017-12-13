@@ -1,0 +1,164 @@
+﻿@using DAL;
+@{
+    ViewBag.Title = "ViewSchedule";
+}
+
+<head>
+    @*<script src="https://davidstutz.github.io/bootstrap-multiselect/dist/js/bootstrap-multiselect.js"></script>
+        <link href="https://davidstutz.github.io/bootstrap-multiselect/dist/css/bootstrap-multiselect.css" rel="stylesheet" />*@
+    <link href="http://cdnjs.cloudflare.com/ajax/libs/fullcalendar/3.3.0/fullcalendar.min.css" rel="stylesheet" />
+    <link href="http://cdnjs.cloudflare.com/ajax/libs/fullcalendar/3.3.0/fullcalendar.print.css" rel="stylesheet" media="print" />
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.18.1/moment.min.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.0/jquery.min.js"></script>
+    <script src="http://cdnjs.cloudflare.com/ajax/libs/fullcalendar/3.3.0/fullcalendar.min.js"></script>
+
+    <link href="http://cdn.rawgit.com/davidstutz/bootstrap-multiselect/master/dist/css/bootstrap-multiselect.css"
+          rel="stylesheet" type="text/css" />
+    <script src="http://cdn.rawgit.com/davidstutz/bootstrap-multiselect/master/dist/js/bootstrap-multiselect.js"
+            type="text/javascript"></script>
+
+
+</head>
+
+<style>
+    .multiselect-container > li > a > label {
+        padding: 4px 20px 3px 20px;
+    }
+    .multiselect{
+        width:150px;
+    }
+
+    .fc-button
+    {
+        top:0px;
+    }
+
+    .fc-month-view span.fc-title {
+        white-space: normal;
+    }
+  
+</style>
+
+<script>
+    $(document).ready(function () {
+
+
+
+          @foreach(ScheduleSearchOption S in (IEnumerable<ScheduleSearchOption>)ViewBag.searchOptions)
+          {
+             @: if (!$("#chkInstructor option[value='@S.Instructor.Trim()']").length > 0)
+                {
+                @: $('#chkInstructor').append($("<option selected></option>").attr("value", '@S.Instructor.Trim()').text('@S.Instructor.Trim()'));
+                }
+
+              @: if (!$("#chkCourse option[value='@S.Title.Trim()']").length > 0)
+                {
+                 @: $('#chkCourse').append($("<option selected></option>").attr("value", '@S.Title.Trim()').text('@S.Title.Trim()'));
+                }
+          }
+
+            $('#chkInstructor').multiselect({
+                includeSelectAllOption: true
+            });
+
+            $('#chkCourse').multiselect({
+                includeSelectAllOption: true
+            });
+
+
+            $('#chkInstructor').change(function () {
+
+                $('#divCourse').html('');
+                $('#divCourse').append('<select id="chkCourse" multiple="multiple" class="multiselect-container"></select>');
+              @foreach(ScheduleSearchOption S in (IEnumerable<ScheduleSearchOption>)ViewBag.searchOptions)
+              {
+                  @: if (!$("#chkCourse option[value='@S.Title.Trim()']").length > 0 && $('#chkInstructor').val().indexOf('@S.Instructor.Trim()') > -1)
+                    {
+                     @: $('#chkCourse').append($("<option selected></option>").attr("value", '@S.Title.Trim()').text('@S.Title.Trim()'));
+                    }
+              }
+
+              $('#chkCourse').multiselect({
+                  includeSelectAllOption: true
+              });
+            })
+
+
+        $('#calendar').fullCalendar({
+            header: {
+                left: 'prev,next',
+                center: 'title',
+                right: 'month,agendaWeek,agendaDay'
+            },
+            defaultDate: Date(),
+            allDay: true,
+            color: 'lightBlue',
+            textColor: 'gray',
+            timezone: 'local',
+            overlap: false,
+            editable: true,
+            eventLimit: true,
+            buttonIcons: {
+                prev: 'left-single-arrow',
+                next: 'right-single-arrow',
+            },
+            contentHeight: 800,
+            events: function (start, end, timezone, callback) {
+                $.ajax({
+                    type: "POST",
+                    url: "/Schedule/GetEvents",
+                    contentType: "application/json; charset=utf-8",
+                    dataType: "json",
+                    data: JSON.stringify({ "start": start, "end": end, "instructorsList": $('#chkInstructor').val().join(','), "courseList": $('#chkCourse').val().join(',') }),
+                    success: function (doc) {
+                        var events = [];
+                        $(doc.events).each(function () {
+                            events.push({
+                                title: $(this).attr('title'),
+                                start: $(this).attr('start'),
+                                end: $(this).attr('end')
+                            });
+                        });
+                        callback(events);
+                    },
+                    error: function (xhr, status, error) {
+
+                    }
+                });
+            }
+        });
+
+
+        $('#btnSearch').click(function(){
+            $('#calendar').fullCalendar('removeEvents');
+            $('#calendar').fullCalendar('refetchEvents');
+        })
+
+    });
+</script>
+
+<body>
+    <div>
+        <table style="margin-left:60%;">
+            <tr>
+                <td><b style="color:black;">Instructor :</b> </td>
+                <td>
+                    <select id="chkInstructor" multiple="multiple" class="multiselect-container"></select>
+                </td>
+                <td style="width:20px"></td>
+                <td><b style="color:black;">Course : </b></td>
+                <td>
+                    <div id="divCourse">
+                        <select id="chkCourse" multiple="multiple" class="multiselect-container"></select>
+                    </div>               
+                </td>
+                <td style="width:20px"></td>
+                <td><input type="button" id="btnSearch" value="Fetch" class="btn btn-primary"/></td>
+            </tr>
+        </table>
+
+    </div>
+    <div id='calendar' style="width:90%;height:500px;margin-left:5%;margin-top :10px"></div>
+</body>
+

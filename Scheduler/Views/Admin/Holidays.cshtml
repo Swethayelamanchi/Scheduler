@@ -1,0 +1,327 @@
+﻿@model DAL.Holiday
+@{
+    ViewBag.Title = "AddHoliday";
+}
+
+<h3 style="color: #d98632;"><b>Holidays</b></h3>
+<br />
+
+<script>
+    $(document).ready(function () {
+
+        var modify = {
+            Date : '',
+            Description : ''
+        }
+        $("#tableHolidays").dataTable({
+            select: true,
+            sortable: true,            
+            "dom": "<'row'<'col-sm-4'<'toolbar'>><'col-sm-8'f>> t<'bottom'ip>",
+            "ajax": {
+                "url": "/Admin/GetHolidays",
+                "type": "POST"                          
+            },
+            "pageLength": 10,
+            "columns": [
+                { "data": "HolidayDate" },
+                { "data": "WeekDay" },
+                { "data": "Description" },
+
+            ]
+            
+        });
+        $('#tableHolidays').on('draw.dt', function () {
+            $("tr").removeClass("trSelected");
+            modify.Date = '';
+        });
+        $('#tableHolidays_filter').css('width', '270px');
+        $("#tableHolidays").on('click', 'tr', function () {
+
+            $("tr").removeClass("trSelected");
+            $(this).addClass('trSelected');
+            modify.Date = $(this).children('td').first().html();
+            modify.Description = $(this).children('td:nth-child(3)').first().html();
+        });
+
+        $('div.toolbar').append('<input type="button" value="Add" id="btnAdd" class="btn btn-default"/>');
+        $('div.toolbar').append('<input type="button" value="Update" id="btnUpdate" class="btn btn-default"/>');
+        $('div.toolbar').append('<input type="button" value="Delete" id="btnDelete" class="btn btn-default"/>');
+        //$('div.toolbar').append('<lable style="margin-left:50px">Year </lable>');
+        //$('div.toolbar').append('<select id="ddlYear"></select>');
+        //$('#ddlYear').append($('<option>', {
+        //    value: 0,
+        //    text: 'All'
+        //}));
+
+        $("#divAdd").dialog({
+            autoOpen: false,
+            modal: true,
+            resizable: false,
+            draggable: false,
+            position: {
+                my: 'center',
+                at: 'center'
+            },
+            dialogClass:''
+        });
+
+
+        $('#btnAdd').click(function () {
+            $('#txtAddHolidayDate').val('');
+            $('#txtAddDescription').val('');
+
+            $('#divAdd').dialog({ title: "Create Holiday" }).dialog('open');
+        })
+
+        $("#divUpdate").dialog({
+            autoOpen: false,
+            modal: true,
+            resizable: false,
+            draggable: false,
+            position: {
+                my: 'center',
+                at: 'center'
+            },
+            dialogClass: ''
+        });
+
+        $('#btnUpdate').click(function () {
+            if (modify.Date == '')
+            {
+                alert('Please select a holiday to update...!!')
+            }
+            else
+            {
+                $('#txtUpdateHolidayDate').val(modify.Date);
+                $('#txtUpdateDescription').val(modify.Description);
+                $('#divUpdate').dialog({ title: "Update Holiday" }).dialog('open');
+            }
+            
+        })
+
+
+        $('#btnDelete').click(function () {
+
+            if (modify.Date == '') {
+                alert('Please select a holiday to Delete...!!')
+            }
+            else {
+                var answer = confirm("do you want to delete Holiday on " + modify.Date + "?");
+                if (answer)
+                {
+                    $.ajax({
+                        url: '/Admin/DeleteHoliday',
+                        async: false,
+                        dataType: 'json',
+                        type: 'post',
+                        contentType: 'application/json',
+                        data: JSON.stringify({ "holidayDate": modify.Date }),
+                        //processData: false,
+                        success: function (response, status, xhr) {
+                            if (response.result == 1)
+                                DisplayMessage("Holiday Deleted Successfully", "green");
+                            else if(response.result == 0)
+                                DisplayMessage("Error while Deleting Holiday", "red");
+                        },
+                        error: function (jqXhr, textStatus, errorThrown) {
+                            DisplayMessage("Error while Deleting Holiday", "red");
+                        }
+                    });
+                    modify.Date == '';
+                    $('#tableHolidays').DataTable().ajax.reload();
+                }
+            }
+          
+
+        })
+
+
+        //$('#btnDialogAdd').click(function () {
+
+        //    AddOrUpdateHoliday(1, $('#txtAddHolidayDate').val(), $('#txtAddDescription').val())
+        //    $('#divAdd').dialog('close');
+        //})
+
+        //$('#btnDialogUpdate').click(function () {
+        //    AddOrUpdateHoliday(0, $('#txtUpdateHolidayDate').val(), $('#txtUpdateDescription').val())
+        //    $('#divUpdate').dialog('close');
+        //})
+
+        function AddOrUpdateHoliday(isNew, HolidayDate, Description)
+        {
+            $.ajax({
+                url: '/Admin/AddOrUpdateHoliday',
+                async: false,
+                dataType: 'json',
+                type: 'post',
+                contentType: 'application/json',
+                data: JSON.stringify({ "isNew": isNew, "holidayDate": HolidayDate, Description }),
+                //processData: false,
+                success: function (response, status, xhr) {
+ 
+                    if (response.result == 1)
+                        DisplayMessage("Holiday "+ (isNew == 1 ?  "Created":"Updated") +" Successfully", "green");
+                    else if (response.result == -1)
+                        DisplayMessage("Holiday trying to created exists", "#f0ad4e");
+                    else if (response.result == 0)
+                        DisplayMessage("Error while " + (isNew == 1 ?  "Creating" : "Updating") +" Holiday");
+                },
+                error: function (jqXhr, textStatus, errorThrown) {
+                    DisplayMessage("Error while " + (isNew == 1 ?  "Creating" : "Updating") + " Holiday");
+                }
+            });
+            $('#tableHolidays').DataTable().ajax.reload();
+        }
+
+
+        $('#txtAddHolidayDate').datetimepicker({
+            timepicker: false,
+            dayOfWeekStart: 1,
+            format: 'Y/m/d',
+            lang: 'en',
+            mask: '9999/31/12',
+            scrollInput: false,
+            //value:CurrentDateTime
+        });
+
+
+        $('#txtUpdateHolidayDate').datetimepicker({
+            timepicker: false,
+            dayOfWeekStart: 1,
+            format: 'Y/m/d',
+            lang: 'en',
+            mask: '9999/31/12',
+            scrollInput: false,
+            //value:CurrentDateTime
+        });
+
+        $('#fmAdd').validate({
+            rules: {
+                HolidayDate: {
+                    required: true,
+                    date: true
+                },
+                Description: {
+                    required: true
+                }
+            },
+            messages: {
+                HolidayDate: {
+                    required: "Please select date"
+                },
+                Description: {
+                    required: "Please provide Holiday Description"
+                }
+            },
+            submitHandler: function (form) { 
+                AddOrUpdateHoliday(1, $('#txtAddHolidayDate').val(), $('#txtAddDescription').val())
+                $('#divAdd').dialog('close');
+            },
+            invalidHandler: function () { // optional callback
+                // fires on button click when form is not valid
+            }
+        });
+
+
+        $('#fmUpdate').validate({
+            rules: {
+                Description: {
+                    required: true
+                }
+            },
+            messages: {
+                Description: {
+                    required: "Please provide Holiday Description"
+                }
+            },
+            submitHandler: function (form) {
+               AddOrUpdateHoliday(0, $('#txtUpdateHolidayDate').val(), $('#txtUpdateDescription').val())
+               $('#divUpdate').dialog('close');
+            },
+            invalidHandler: function () { // optional callback
+                // fires on button click when form is not valid
+            }
+        });
+
+
+        $("#divMessage").dialog({
+            autoOpen: false,
+            resizable: false,
+            draggable: false,
+            position: {
+                my: 'center',
+                at: 'center'
+            },
+            dialogClass: ''
+        });
+
+        function DisplayMessage(msg, color) {
+            $('#lblMessage').text(msg);
+            $('#lblMessage').css('color', color);
+            $("#divMessage .ui-dialog-titlebar").css('background-color', 'red');
+            $("#divMessage").dialog({ title: "Message" }).dialog('open');
+        }
+
+        $('#btnMessage').click(function () {
+            $("#divMessage").dialog('close');
+        })
+
+    });
+</script>
+
+<style>
+
+
+</style>
+
+<table id="tableHolidays" class="table table-hover" >
+    <thead>
+        <tr>
+            <th>Holiday</th>
+            <th>Week Day</th>
+            <th>Description</th>
+        </tr>
+    </thead>
+
+</table>
+
+<div class="container" id="divAdd" style="max-width:600px;">
+    <form data-toggle="validator" role="form" id="fmAdd">
+        @Html.Label("Holiday Date")<strong> *</strong>
+        <div class="form-group">
+            @Html.EditorFor(model => model.HolidayDate, new { htmlAttributes = new { @class = "form-control",  id="txtAddHolidayDate" , tabindex = "-1" } })
+        </div>
+        @Html.Label("Description")<strong> *</strong>
+        <div class="form-group">
+            @Html.EditorFor(model => model.Description, new { htmlAttributes = new { @class = "form-control", placeholder = "Desription" , id="txtAddDescription" } })
+        </div>
+        <button type="submit" class="btn btn-primary" id="btnDialogAdd" style="float:right;width:100px">Add</button>
+    </form>
+</div>
+
+<div class="container" id="divUpdate" style="max-width:600px;">
+    <form data-toggle="validator" role="form" id="fmUpdate">
+        @Html.Label("Holiday Date")<strong> *</strong>
+        <div class="form-group">
+            @Html.EditorFor(model => model.HolidayDate, new { htmlAttributes = new { @class = "form-control",  id = "txtUpdateHolidayDate" , disabled = "disabled" } })
+        </div>
+        @Html.Label("Description")<strong> *</strong>
+        <div class="form-group">
+            @Html.EditorFor(model => model.Description, new { htmlAttributes = new { @class = "form-control", placeholder = "Desription" , id = "txtUpdateDescription" } })
+        </div>
+        <button type="submit" class="btn btn-primary" id="btnDialogUpdate" style="float:right;width:100px">Update</button>
+    </form>
+</div>
+
+<div id="divMessage" style="width:200px;height:100px">
+    <table style="width:100%;margin-top:10px">
+        <tr style="width:90%">
+            <td >
+                <lable id="lblMessage" class="info"></lable>
+            </td>
+        </tr>
+        <tr style="width:90%">
+            <td style="float:right;width:40px;height:30px"><input type="button" class="btn btn-info" id="btnMessage" value="Ok"></td>
+        </tr>
+    </table>
+</div>

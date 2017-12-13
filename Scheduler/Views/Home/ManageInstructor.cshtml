@@ -1,0 +1,317 @@
+﻿
+@{
+    ViewBag.Title = "ManageInstructor";
+}
+
+<h3 style="color: #d98632;"><b>Manage Instructors</b></h3>
+<br />
+<script>
+
+    $(document).ready(function () {
+
+        var modifyInstructor = {
+            instructorid: '',
+            firstName: '',
+            middleName: '',
+            lastName: '',
+            email: ''
+        };
+
+        var isNew;
+       
+        $("#tableInstructors").dataTable({
+            select: true,
+            sortable: true,
+            "dom": "<'row'<'col-sm-4'<'toolbar'>><'col-sm-8'f>> t<'bottom'ip>",
+            "ajax": {
+                "url": "/Instructor/GetInstructors",
+                "type": "POST",
+            },
+            "pageLength": 10,
+            "columns": [
+                { "data": "InstructorId" },
+                { "data": "FirstName" },
+                { "data": "MiddleName" },
+                { "data": "LastName" },
+                { "data": "Email" }
+            ],
+            "columnDefs": [
+                {
+                    "targets": 0,
+                    "className": "text-center"
+                },
+                {
+                    "targets": 1,
+                    "className": "text-left"
+                },
+                {
+                    "targets": 2,
+                    "className": "text-left"
+                },
+                {
+                    "targets": 3,
+                    "className": "text-left"
+                },
+                {
+                    "targets": 4,
+                    "className": "text-left"
+                }
+
+            ]
+
+        });
+
+
+        $('#tableInstructors').on('draw.dt', function () {
+            $("tr").removeClass("trSelected");
+            modifyInstructor.instructorid = '';
+        });
+
+
+        $('#tableInstructors_filter').css('width', '270px');
+
+        $("#tableInstructors").on('click', 'tr', function () {
+            $("tr").removeClass("trSelected");
+            $(this).addClass('trSelected');
+            modifyInstructor.instructorid = $(this).children('td').first().html();
+            modifyInstructor.firstName = $(this).children('td:nth-child(2)').first().html()
+            modifyInstructor.middleName = $(this).children('td:nth-child(3)').first().html();
+            modifyInstructor.lastName = $(this).children('td:nth-child(4)').first().html();
+            modifyInstructor.email = $(this).children('td:nth-child(5)').first().html();
+        });
+
+        $('div.toolbar').append('<input type="button" value="Add" id="btnAdd" class="btn btn-default"/>');
+        $('div.toolbar').append('<input type="button" value="Update" id="btnUpdate" class="btn btn-default"/>');
+        $('div.toolbar').append('<input type="button" value="Delete" id="btnDelete" class="btn btn-default"/>');
+
+
+        $("#divAddOrUpdate").dialog({
+            autoOpen: false,
+            resizable: false,
+            draggable: false,
+            modal: true,
+            position: {
+                my: 'center',
+                at: 'center'
+            },
+            dialogClass: ''
+        });
+
+
+        $('#btnAdd').click(function () {
+            isNew = 1;
+            $('#btnDialogAdd').css('display', 'inline');
+            $('#btnDialogUpdate').css('display', 'none');
+            $('#divAddOrUpdate').dialog({ title: "Add New Instructor" }).dialog('open');
+
+            $('#txtFirstName').val('');
+            $('#txtMiddleName').val('');
+            $('#txtLastName').val('');
+            $('#txtEmail').val('');
+        })
+
+        $('#btnUpdate').click(function () {
+            if (modifyInstructor.instructorid == '') {
+                alert('Please select an instructor to update...!!')
+            }
+            else {
+                isNew = 0;
+
+                $('#btnDialogAdd').css('display', 'none');
+                $('#btnDialogUpdate').css('display', 'inline');
+               
+                $('#txtFirstName').val(modifyInstructor.firstName);
+                $('#txtMiddleName').val(modifyInstructor.middleName);
+                $('#txtLastName').val(modifyInstructor.lastName);
+                $('#txtEmail').val(modifyInstructor.email);
+
+                $('#divAddOrUpdate').dialog({ title: "Update Instructor" }).dialog('open');
+            }
+
+        });
+
+
+        $('#btnDelete').click(function () {
+
+            if (modifyInstructor.instructorid == '') {
+                alert('Please select instructor from table to Delete...!!')
+            }
+            else {
+                var answer = confirm("do you want to delete user " + modifyInstructor.firstName + ' ' + modifyInstructor.middleName + ' '+ modifyInstructor.lastName + "?");
+                if (answer) {
+                    $.ajax({
+                        url: '/Instructor/DeleteInstructor',
+                        async: false,
+                        dataType: 'json',
+                        type: 'post',
+                        contentType: 'application/json',
+                        data: JSON.stringify({ "instructorId": modifyInstructor.instructorid }),
+                        //processData: false,
+                        success: function (response, status, xhr) {
+                            if (response.result == 1)
+                                DisplayMessage("Instructor Deleted Successfully", "green");
+                            else if (response.result == 0)
+                                DisplayMessage("Error while Deleting Instructor", "red");
+                        },
+                        error: function (jqXhr, textStatus, errorThrown) {
+                            DisplayMessage("Error while Deleting Instructor", "red");
+                        }
+                    });
+                    modifyInstructor.instructorid == '';
+                    $('#tableInstructors').DataTable().ajax.reload();
+                }
+            }
+
+        })
+
+        //$('#btnDialogAdd').click(function () {
+        //    AddOrUpdateInstructor(1, 0, $('#txtFirstName').val(), $('#txtMiddleName').val(), $('#txtLastName').val(), $('#txtEmail').val());            
+        //    $('#divAddOrUpdate').dialog('close');
+        //})
+
+        //$('#btnDialogUpdate').click(function () {
+        //    AddOrUpdateInstructor(0, modifyInstructor.instructorid, $('#txtFirstName').val(), $('#txtMiddleName').val(), $('#txtLastName').val(), $('#txtEmail').val())
+        //    $('#divAddOrUpdate').dialog('close');
+        //})
+
+        $('#fmAddOrUpdate').validate({
+            rules: {
+                FirstName: {
+                    required: true
+                },
+                LastName: {
+                    required: true
+                },
+                Email: {
+                    required: true,
+                    email : true
+                }
+            },
+            messages: {
+                FirstName: {
+                    required: "Please enter First Name"
+                },
+                LastName: {
+                    required: "Please enter Last Name"
+                },
+                Email : {
+                    required: "Please enter a valid Email"
+                }
+            },
+            submitHandler: function (form) {
+                if (isNew == 1) {
+                    AddOrUpdateInstructor(1, 0, $('#txtFirstName').val(), $('#txtMiddleName').val(), $('#txtLastName').val(), $('#txtEmail').val());   
+                }
+                else {
+                    AddOrUpdateInstructor(0, modifyInstructor.instructorid, $('#txtFirstName').val(), $('#txtMiddleName').val(), $('#txtLastName').val(), $('#txtEmail').val())
+                }
+                $('#divAddOrUpdate').dialog('close');
+                $('#tableInstructors').DataTable().ajax.reload();
+            },
+            invalidHandler: function () { // optional callback
+                // fires on button click when form is not valid
+            }
+
+        });
+
+        function AddOrUpdateInstructor(isNew, instructorId, FirstName, MiddleName, LastName, Email) {
+            $.ajax({
+                url: '/Instructor/AddOrUpdateInstructor',
+                async: false,
+                dataType: 'json',
+                type: 'post',
+                contentType: 'application/json',
+                data: JSON.stringify({ "isNew": isNew, "instructorId": instructorId, "firstName": FirstName, "middleName" : MiddleName,"lastName":LastName,"email":Email}),
+                //processData: false,
+                success: function (response, status, xhr) {
+                    if (response.result == 1)
+                        DisplayMessage("Instructor " + (isNew == 1 ?  "Created" : "Updated") + " Successfully", "green");
+                    else if (response.result == -1)
+                        DisplayMessage("Instructor trying to created exists", "#f0ad4e");
+                    else if (response.result == 0)
+                        DisplayMessage("Error while " + (isNew == 1 ?  "Creating" : "Updating") + " Instructor");
+                },
+                error: function (jqXhr, textStatus, errorThrown) {
+                    DisplayMessage("Error while " + (isNew == 1 ?  "Creating" : "Updating") + " Instructor");
+                }
+            });
+        }
+
+        $("#divMessage").dialog({
+            autoOpen: false,
+            resizable: false,
+            draggable: false,
+            position: {
+                my: 'center',
+                at: 'center'
+            },
+            dialogClass: ''
+        });
+
+        function DisplayMessage(msg, color) {
+            $('#lblMessage').text(msg);
+            $('#lblMessage').css('color', color);
+            $("#divMessage .ui-dialog-titlebar").css('background-color', 'red');
+            $("#divMessage").dialog({ title: "Message" }).dialog('open');
+        }
+
+        $('#btnMessage').click(function () {
+            $("#divMessage").dialog('close');
+        })
+
+     });
+
+</script>
+
+
+<table id="tableInstructors" class="table table-hover">
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>First Name</th>
+            <th>Middle Name</th>
+            <th>Last Name</th>
+            <th>Email</th>
+        </tr>
+    </thead>
+
+</table>
+
+<div class="container" id="divAddOrUpdate" style="max-width:600px;">
+    <form data-toggle="validator" role="form" id="fmAddOrUpdate">
+        @Html.Label("First Name") <strong> *</strong>
+        <div class="form-group">
+            @Html.Editor("FirstName", new { htmlAttributes = new { @class = "form-control", placeholder = "First Name", id = "txtFirstName" } })
+        </div>
+        @Html.Label("Middle Name")
+        <div class="form-group">
+            @Html.Editor("MiddleName", new { htmlAttributes = new { @class = "form-control", placeholder = "Middle Name", id = "txtMiddleName" } })
+        </div>
+
+        @Html.Label("Last Name") <strong> *</strong>
+        <div class="form-group">
+            @Html.Editor("LastName", new { htmlAttributes = new { @class = "form-control", placeholder = "Last Name", id = "txtLastName" } })
+        </div>
+
+        @Html.Label("Email") <strong> *</strong>
+        <div class="form-group">
+            @Html.Editor("Email", new { htmlAttributes = new { @class = "form-control", placeholder = "Email", id = "txtEmail" } })
+        </div>
+        <button type="submit" class="btn btn-primary" id="btnDialogAdd" style="float:right;width:100px">Add</button>
+        <button type="submit" class="btn btn-primary" id="btnDialogUpdate" style="float:right;width:100px">Update</button>
+    </form>
+</div>
+
+<div id="divMessage" style="width:200px;height:100px">
+    <table style="width:100%;margin-top:10px">
+        <tr style="width:90%">
+            <td>
+                <lable id="lblMessage" class="info"></lable>
+            </td>
+        </tr>
+        <tr style="width:90%">
+            <td style="float:right;width:40px;height:30px"><input type="button" class="btn btn-info" id="btnMessage" value="Ok"></td>
+        </tr>
+    </table>
+</div>
+

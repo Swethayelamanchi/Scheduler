@@ -1,0 +1,288 @@
+﻿
+@{
+    ViewBag.Title = "ManageClassRoom";
+}
+
+<h3 style="color: #d98632;"><b>Class Rooms</b></h3>
+<br />
+
+<script>
+
+    $(document).ready(function () {
+
+        var modify =
+            {
+                RoomNumber: '',
+                Building: '',
+                Location: '',
+                Capacity: ''
+            };
+
+        var isNew;
+
+        $("#tableRooms").dataTable({
+            select: true,
+            sortable: true,
+            "dom": "<'row'<'col-sm-4'<'toolbar'>><'col-sm-8'f>> t<'bottom'ip>",
+            "ajax": {
+                "url": "/Room/GetRooms",
+                "type": "POST",
+            },
+            "pageLength": 10,
+            "columns": [
+                { "data": "RoomNumber" },
+                { "data": "Building" },
+                { "data": "Location" },
+                { "data": "Capacity" }
+            ],
+        });
+
+        $('#tableRooms').on('draw.dt', function () {
+            $("tr").removeClass("trSelected");
+            modify.UserName = '';
+        });
+
+        $('#tableRooms_filter').css('width', '270px');
+
+        $("#tableRooms").on('click', 'tr', function () {
+            $("tr").removeClass("trSelected");
+            $(this).addClass('trSelected');
+            modify.RoomNumber = $(this).children('td').first().html();
+            modify.Building = $(this).children('td:nth-child(2)').first().html()
+            modify.Location = $(this).children('td:nth-child(3)').first().html();
+            modify.Capacity = $(this).children('td:nth-child(4)').first().html();
+        });
+
+        $('div.toolbar').append('<input type="button" value="Add" id="btnAdd" class="btn btn-default"/>');
+        $('div.toolbar').append('<input type="button" value="Update" id="btnUpdate" class="btn btn-default"/>');
+        $('div.toolbar').append('<input type="button" value="Delete" id="btnDelete" class="btn btn-default"/>');
+
+
+        $("#divAddOrUpdate").dialog({
+            autoOpen: false,
+            resizable: false,
+            draggable: false,
+            modal : true,
+            position: {
+                my: 'center',
+                at: 'center'
+            },
+            dialogClass: ''
+        });
+
+
+        $('#btnAdd').click(function () {
+            isNew = 1;
+            $('#btnDialogAdd').css('display', 'inline');
+            $('#btnDialogUpdate').css('display', 'none');
+            $('#divAddOrUpdate').dialog({ title: "Add User" }).dialog('open');
+
+            $('#txtBuilding').val('');
+            $('#txtLocation').val('');
+            $('#txtCapacity').val('');
+        })
+
+        $('#btnUpdate').click(function () {
+            if (modify.RoomNumber == '') {
+                alert('Please select a Class Room to update...!!')
+            }
+            else {
+                isNew = 0;
+                $('#btnDialogAdd').css('display', 'none');
+                $('#btnDialogUpdate').css('display', 'inline');
+
+                $('#txtBuilding').val(modify.Building);
+                $('#txtLocation').val(modify.Location);
+                $('#txtCapacity').val(modify.Capacity);
+
+                $('#divAddOrUpdate').dialog({ title: "Update User" }).dialog('open');
+            }
+
+        });
+
+
+
+        $('#btnDelete').click(function () {
+
+            if (modify.RoomNumber == '') {
+                alert('Please select a Class Room to Delete...!!')
+            }
+            else {
+                var answer = confirm("do you want to delete Class Room " + modify.RoomNumber + "?");
+                if (answer) {
+                    $.ajax({
+                        url: '/Room/DeleteRoom',
+                        async: false,
+                        dataType: 'json',
+                        type: 'post',
+                        contentType: 'application/json',
+                        data: JSON.stringify({ "roomNumber": modify.RoomNumber }),
+                        //processData: false,
+                        success: function (response, status, xhr) {
+                            if (response.result == 1)
+                                DisplayMessage("Class Room Deleted Successfully", "green");
+                            else if (response.result == 0)
+                                DisplayMessage("Error while Deleting Class Room", "red");
+                        },
+                        error: function (jqXhr, textStatus, errorThrown) {
+                            DisplayMessage("Error while Deleting Class Room", "red");
+                        }
+                    });
+                    modify.UserName == '';
+                    $('#tableRooms').DataTable().ajax.reload();
+                }
+            }
+
+        })
+
+
+        //$('#btnDialogAdd').click(function () {
+
+        //    AddOrUpdateUser(1, $('#txtUserName').val(), $('#txtFirstName').val(), $('#txtLastName').val(), $('#txtEmail').val(), $('#txtRole').val(), $('#txtPassword').val());
+        //    $('#divAddOrUpdate').dialog('close');
+        //})
+
+        //$('#btnDialogUpdate').click(function () {
+        //    AddOrUpdateUser(0, $('#txtUserName').val(), $('#txtFirstName').val(), $('#txtLastName').val(), $('#txtEmail').val(), $('#txtRole').val(),'')
+        //    $('#divAddOrUpdate').dialog('close');
+        //})
+
+        $('#fmAddOrUpdate').validate({
+            rules: {
+                Building: {
+                    required: true
+                },
+                Location: {
+                    required: true
+                },
+                Capacity: {
+                    required : true
+                }
+            },
+            messages: {
+                Building: {
+                    required: "Please enter Building Name"
+                },
+                Location: {
+                    required: "Please enter Location"
+                },
+                Capacity: {
+                    required: "Please enter Capacity"
+                }
+            },
+            submitHandler: function (form) {
+                if (isNew == 1)
+                {
+                    AddOrUpdateRoom(1, 0, $('#txtBuilding').val(), $('#txtLocation').val(), $('#txtCapacity').val());
+                }
+                else
+                {
+                    AddOrUpdateRoom(0, modify.RoomNumber, $('#txtBuilding').val(), $('#txtLocation').val(), $('#txtCapacity').val());
+                }
+
+                $('#divAddOrUpdate').dialog('close');
+            },
+            invalidHandler: function () { // optional callback
+                // fires on button click when form is not valid
+            }
+        });
+
+
+        function AddOrUpdateRoom(isNew, roomNumber, building, location, capacity) {
+            $.ajax({
+                url: '/Room/AddOrUpdateRoom',
+                async: false,
+                dataType: 'json',
+                type: 'post',
+                contentType: 'application/json',
+                data: JSON.stringify({ "isNew": isNew, "roomNumber": roomNumber, "building": building, "location": location, "capacity": capacity }),
+                //processData: false,
+                success: function (response, status, xhr) {
+                    if (response.result == 1)
+                        DisplayMessage("Class Room " + (isNew == 1 ?  "Created" : "Updated" ) + " Successfully", "green");
+                    else if (response.result == -1)
+                        DisplayMessage("Class Room already exists", "#f0ad4e");
+                    else if (response.result == 0)
+                        DisplayMessage("Error while " + (isNew == 1 ?  "Creating" : "Updating") + " Class Room");
+                },
+                error: function (jqXhr, textStatus, errorThrown) {
+                    DisplayMessage("Error while " + (isNew == 1 ?  "Creating" : "Updating") + " Class Room");
+                }
+            });
+            $('#tableRooms').DataTable().ajax.reload();
+        }
+
+        $("#divMessage").dialog({
+            autoOpen: false,
+            resizable: false,
+            draggable: false,
+            position: {
+                my: 'center',
+                at: 'center'
+            },
+            dialogClass: ''
+        });
+
+        function DisplayMessage(msg, color) {
+            $('#lblMessage').text(msg);
+            $('#lblMessage').css('color', color);
+            $("#divMessage .ui-dialog-titlebar").css('background-color', 'red');
+            $("#divMessage").dialog({ title: "Message" }).dialog('open');
+        }
+
+        $('#btnMessage').click(function () {
+            $("#divMessage").dialog('close');
+        })
+
+    });
+
+</script>
+
+
+<table id="tableRooms" class="table table-hover">
+    <thead>
+        <tr>
+            <th>RoomNumber</th>
+            <th>Building</th>
+            <th>Location</th>
+            <th>Capacity</th>
+        </tr>
+    </thead>
+
+</table>
+
+<div class="container" id="divAddOrUpdate" style="max-width:600px;">
+    <form data-toggle="validator" role="form" id="fmAddOrUpdate">
+        @Html.Label("Building")<strong> *</strong>
+        <div class="form-group">
+            @Html.Editor("Building", new { htmlAttributes = new { @class = "form-control", placeholder = "Building Name", id = "txtBuilding" } })
+        </div>
+        @Html.Label("Location")<strong> *</strong>
+        <div class="form-group">
+            @Html.Editor("Location", new { htmlAttributes = new { @class = "form-control", placeholder = "First Name", id = "txtLocation" } })
+        </div>
+
+        @Html.Label("Capacity")
+        <div class="form-group">
+            @Html.Editor("Capacity", new { htmlAttributes = new { @class = "form-control", placeholder = "Capacity", id = "txtCapacity" ,type="number" } })
+        </div>
+
+        <br />
+        <button type="submit" class="btn btn-primary" id="btnDialogAdd" style="float:right;width:100px">Add</button>
+        <button type="submit" class="btn btn-primary" id="btnDialogUpdate" style="float:right;width:100px">Update</button>
+    </form>
+</div>
+
+
+<div id="divMessage" style="width:200px;height:100px">
+    <table style="width:100%;margin-top:10px">
+        <tr style="width:90%">
+            <td>
+                <lable id="lblMessage" class="info"></lable>
+            </td>
+        </tr>
+        <tr style="width:90%">
+            <td style="float:right;width:40px;height:30px"><input type="button" class="btn btn-info" id="btnMessage" value="Ok"></td>
+        </tr>
+    </table>
+</div>

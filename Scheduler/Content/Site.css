@@ -1,0 +1,50 @@
+﻿
+
+/* Set width on the form input elements since they're 100% wide by default */
+input,
+select,
+textarea {
+    max-width: 280px;
+}
+
+.logout {
+    float: right;
+    margin-right: 5%;
+    margin-top: 25px;
+}
+
+.divcolor {
+    height: 80px;
+    background-color: black;
+}
+
+.sidebar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    z-index: 1000;
+    display: block;
+    padding: 20px;
+    overflow-x: hidden;
+    overflow-y: auto;
+    background-color: #f5f5f5;
+    border-right: 1px solid #eee;
+}
+
+.main {
+    padding-right: 40px;
+    padding-left: 40px;
+    display : block;
+}
+
+
+/*#calendar {
+    position: relative;
+    margin-top: 500px;
+    margin-left: 100px;
+    text-align: center;
+    font-size: 14px;
+    font-family: "Lucida Grande",Helvetica,Arial,Verdana,sans-serif;
+    width: 80%;
+    margin: 0 auto;
+}*/
